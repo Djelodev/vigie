@@ -1,56 +1,50 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import useSWR from 'swr'
+import { useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight, Heart, BarChart2, Bell, Check, Sparkles, Info,
-  CircleAlert, ShieldCheck, ExternalLink, RefreshCw,
+  Calendar, Compass, Loader2, Plus,
 } from 'lucide-react'
-import { RecallsSection } from '@/components/rappel-dashboard'
+import { useCurrentUser, useFavorites, useTasks, useNotifications } from '@/lib/hooks'
 import { useToast } from '@/components/Toast'
 
-// ── Types ────────────────────────────────────────────────────
-type RecallResponse = { total: number; results: Recall[]; updatedAt: string; error?: string }
-type Recall = {
-  id: number; date_publication: string; numero_fiche: string;
-  categorie_produit: string; marque_produit: string; libelle: string;
-  modeles_ou_references: string; motif_rappel: string; risques_encourus: string;
-  zone_geographique_de_vente: string; lien_vers_la_fiche_rappel: string;
-}
-const fetcher = async (url: string): Promise<RecallResponse> => {
-  const r = await fetch(url)
-  if (!r.ok) throw new Error('Erreur réseau')
-  return r.json()
-}
-
-// ── Checklist ────────────────────────────────────────────────
-const TASKS = [
-  { label: 'Explorer trois formations',   note: 'Découvre plusieurs options' },
-  { label: 'Identifier mes critères',     note: 'Choisis ce qui compte pour toi' },
-  { label: 'Préparer mes documents',      note: 'Liste les pièces dont tu auras besoin' },
+const PARCOURSUP_NEXT_EVENTS = [
+  { date: '2025-05-30', title: 'Début de la phase principale d\'admission', link: 'https://www.parcoursup.gouv.fr' },
+  { date: '2025-07-11', title: 'Fin de la phase principale', link: 'https://www.parcoursup.gouv.fr' },
+  { date: '2025-09-12', title: 'Fermeture de Parcoursup 2025', link: 'https://www.parcoursup.gouv.fr' },
 ]
 
 export default function DashboardPage() {
-  const [tasks, setTasks]       = useState([false, true, false])
-  const [saved]                 = useState([1, 2])
-  const [compareCount]          = useState(2)
-  const { toast } = useToast()
+  const { user, isLoggedIn, isLoading: authLoading } = useCurrentUser()
+  const { favorites } = useFavorites()
+  const { tasks, mutate: mutateTasks }   = useTasks()
+  const { unread }   = useNotifications()
+  const { toast }    = useToast()
 
-  const { data, isLoading, mutate } = useSWR<RecallResponse>('/api/recalls', fetcher, {
-    refreshInterval: 300000,
-    revalidateOnFocus: false,
-  })
+  const doneCount  = tasks.filter(t => t.done).length
+  const progress   = tasks.length > 0 ? Math.round((doneCount / tasks.length) * 100) : 0
+  const todoTasks  = tasks.filter(t => !t.done).slice(0, 3)
 
-  const doneCount   = tasks.filter(Boolean).length
-  const totalTasks  = tasks.length
-  const urgentCount = useMemo(() => {
-    return (data?.results ?? []).filter(item =>
-      /listeria|salmonell|escherichia|allerg|risque.*santé|intoxication/i.test(
-        `${item.risques_encourus} ${item.motif_rappel}`
-      )
-    ).length
-  }, [data])
+  const today = new Date()
+  const nextEvent = PARCOURSUP_NEXT_EVENTS.find(e => new Date(e.date) >= today)
+
+  async function toggleTask(id: number, done: boolean) {
+    await fetch('/api/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, done: !done }),
+    })
+    await mutateTasks()
+    toast(!done ? 'Tâche terminée !' : 'Tâche remise à faire.', !done ? 'success' : 'default')
+  }
+
+  if (authLoading) return (
+    <div className="page-content" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 32, color: 'var(--vigie-slate)' }}>
+      <Loader2 size={22} className="spin" />
+      <span>Chargement…</span>
+    </div>
+  )
 
   return (
     <div className="page-content dash-page">
@@ -58,21 +52,12 @@ export default function DashboardPage() {
       <div className="dash-head">
         <div>
           <div className="eyebrow">Mon espace étudiant</div>
-          <h1>Salut, Étudiant·e !</h1>
-          <p>Voici les repères pour avancer sereinement dans ton orientation.</p>
+          <h1>Salut, {isLoggedIn ? user?.name : 'bienvenue'} !</h1>
+          <p>Voici tes repères pour avancer sereinement dans ton orientation.</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            className="icon-btn"
-            onClick={() => { mutate(); toast('Données actualisées.', 'success') }}
-            aria-label="Actualiser les données"
-          >
-            <RefreshCw size={17} />
-          </button>
-          <Link href="/mes-choix" className="btn btn-outline">
-            Mes choix <ArrowRight size={16} />
-          </Link>
-        </div>
+        <Link href="/explorer" className="btn btn-outline">
+          Explorer <ArrowRight size={16} />
+        </Link>
       </div>
 
       {/* ── HERO BANNER ────────────────────────── */}
@@ -82,7 +67,7 @@ export default function DashboardPage() {
             <Sparkles size={13} /> LE BON REPÈRE, AU BON MOMENT.
           </div>
           <h2>Ton avenir.<br />Tes choix. À ton rythme.</h2>
-          <p>Explore les formations, compare tes options et garde un œil sur les étapes qui comptent.</p>
+          <p>Explore 14 252 formations officielles Parcoursup 2025, compare tes options et garde un œil sur les étapes qui comptent.</p>
           <Link href="/explorer" className="btn btn-white">
             Explorer les formations <ArrowRight size={16} />
           </Link>
@@ -100,17 +85,17 @@ export default function DashboardPage() {
             <Heart size={22} strokeWidth={1.8} />
           </div>
           <div className="dash-stat-info">
-            <span className="dash-stat-num">{saved.length}</span>
+            <span className="dash-stat-num">{isLoggedIn ? favorites.length : '—'}</span>
             <span className="dash-stat-label">Formations suivies</span>
           </div>
         </Link>
-        <Link href="/comparer" className="dash-stat card">
+        <Link href="/mes-choix" className="dash-stat card">
           <div className="tile-icon mint">
-            <BarChart2 size={22} strokeWidth={1.8} />
+            <Check size={22} strokeWidth={1.8} />
           </div>
           <div className="dash-stat-info">
-            <span className="dash-stat-num">{compareCount}</span>
-            <span className="dash-stat-label">À comparer</span>
+            <span className="dash-stat-num">{isLoggedIn ? `${progress}%` : '—'}</span>
+            <span className="dash-stat-label">Progression préparation</span>
           </div>
         </Link>
         <Link href="/alertes" className="dash-stat card">
@@ -118,10 +103,8 @@ export default function DashboardPage() {
             <Bell size={22} strokeWidth={1.8} />
           </div>
           <div className="dash-stat-info">
-            <span className="dash-stat-num">
-              {isLoading ? '…' : urgentCount}
-            </span>
-            <span className="dash-stat-label">Alertes à lire</span>
+            <span className="dash-stat-num">{isLoggedIn ? unread : '—'}</span>
+            <span className="dash-stat-label">Notifications non lues</span>
           </div>
         </Link>
       </div>
@@ -131,102 +114,146 @@ export default function DashboardPage() {
         {/* Prochaines étapes */}
         <section className="card dash-panel">
           <div className="dash-panel-head">
-            <h2>Mes prochaines étapes</h2>
+            <h2>{isLoggedIn ? 'Mes prochaines tâches' : 'Checklist orientation'}</h2>
             <Link href="/mes-choix" className="btn btn-text">
               Voir tout <ArrowRight size={14} />
             </Link>
           </div>
 
-          <div className="task-list">
-            {TASKS.map((task, i) => (
-              <label key={i} className="task-row">
-                <input
-                  type="checkbox"
-                  checked={tasks[i]}
-                  onChange={() => {
-                    setTasks(prev => {
-                      const next = [...prev]
-                      next[i] = !next[i]
-                      return next
-                    })
-                    toast(!tasks[i] ? `"${task.label}" marqué comme terminé !` : `"${task.label}" remis à faire.`, !tasks[i] ? 'success' : 'default')
-                  }}
-                  aria-label={task.label}
-                />
-                <div className="task-body">
-                  <strong>{task.label}</strong>
-                  <span>{task.note}</span>
-                </div>
-                <span className={`badge ${tasks[i] ? 'badge-mint' : 'badge-orange'}`}>
-                  {tasks[i] ? 'Terminé' : 'À faire'}
-                </span>
-              </label>
-            ))}
-          </div>
+          {!isLoggedIn ? (
+            <div className="dash-cta">
+              <Heart size={24} style={{ color: 'var(--vigie-blue)' }} />
+              <div>
+                <strong>Connecte-toi pour suivre ta progression</strong>
+                <p>Crée un compte pour sauvegarder tes formations et cocher tes étapes.</p>
+              </div>
+              <Link href="/auth/register" className="btn btn-primary">
+                Créer un compte <ArrowRight size={15} />
+              </Link>
+            </div>
+          ) : todoTasks.length === 0 ? (
+            <div className="dash-empty">
+              <Check size={24} style={{ color: 'var(--vigie-mint)' }} />
+              <strong>Toutes tes tâches sont terminées !</strong>
+              <Link href="/mes-choix" className="btn btn-secondary">
+                <Plus size={14} /> Ajouter une tâche
+              </Link>
+            </div>
+          ) : (
+            <div className="task-list">
+              {todoTasks.map(task => (
+                <label key={task.id} className="task-row">
+                  <input
+                    type="checkbox"
+                    checked={!!task.done}
+                    onChange={() => toggleTask(task.id, !!task.done)}
+                    aria-label={task.label}
+                  />
+                  <div className="task-body">
+                    <strong>{task.label}</strong>
+                    {task.note && <span>{task.note}</span>}
+                  </div>
+                  <span className="badge badge-orange">À faire</span>
+                </label>
+              ))}
+            </div>
+          )}
 
-          <div className="dash-tip">
-            <Info size={16} />
-            <span>Les échéances affichées sont des exemples, pas le calendrier officiel.</span>
-          </div>
+          {isLoggedIn && (
+            <div className="dash-progress-bar" style={{ marginTop: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--vigie-slate)', marginBottom: 6 }}>
+                <span>{doneCount}/{tasks.length} tâches terminées</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="progress-track">
+                <div className="progress-fill mint" style={{ width: `${progress}%`, transition: 'width 0.5s ease' }} />
+              </div>
+            </div>
+          )}
         </section>
 
-        {/* Mon avancée */}
+        {/* Calendrier / Vigi tip */}
         <section className="card dash-panel">
           <div className="dash-panel-head">
-            <h2>Mon avancée</h2>
-            <span className="badge badge-mint">À ton rythme</span>
-          </div>
-          <div className="dash-progress-num">
-            <span>{doneCount}</span>/{totalTasks}
-          </div>
-          <p className="dash-progress-label">étapes préparatoires terminées</p>
-          <div className="progress-track" role="progressbar"
-            aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={totalTasks}
-            aria-label="Progression des étapes"
-          >
-            <div
-              className="progress-fill"
-              style={{ width: `${(doneCount / totalTasks) * 100}%` }}
-            />
+            <h2>Calendrier Parcoursup</h2>
+            <span className="badge badge-blue">Officiel</span>
           </div>
 
-          <div className="dash-vigi-tip">
+          {nextEvent ? (
+            <div className="dash-next-event">
+              <div className={`tile-icon orange`}>
+                <Calendar size={20} strokeWidth={1.8} />
+              </div>
+              <div>
+                <strong>{nextEvent.title}</strong>
+                <p>{new Date(nextEvent.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <a href={nextEvent.link} target="_blank" rel="noopener noreferrer" className="btn btn-text" style={{ fontSize: 12, padding: '4px 0' }}>
+                  Vérifier sur parcoursup.fr <ArrowRight size={11} />
+                </a>
+              </div>
+            </div>
+          ) : (
+            <p style={{ fontSize: 13, color: 'var(--vigie-slate)' }}>Aucune échéance imminente.</p>
+          )}
+
+          <div className="dash-vigi-tip" style={{ marginTop: 20 }}>
             <div className="dash-vigi-portrait">
               <img src="/brand/vigi-portrait.webp" alt="Vigi" width="44" height="44" />
             </div>
             <div>
               <strong>Un conseil de Vigi</strong>
-              <p>Compare les contenus des formations, pas seulement leurs chiffres.</p>
+              <p>Compare les contenus des formations, pas seulement leurs chiffres. Les taux d'accès varient d'une année à l'autre.</p>
             </div>
           </div>
+
+          <Link href="/alertes" className="btn btn-secondary" style={{ marginTop: 20, width: '100%', justifyContent: 'center' }}>
+            <Bell size={15} /> Voir le calendrier complet
+          </Link>
         </section>
       </div>
 
-      {/* ── VEILLE RAPPELCONSO ─────────────────── */}
-      <section className="dash-recalls-section" aria-label="Veille actualités consommation">
-        <div className="dash-recalls-header">
-          <div>
-            <div className="eyebrow">
-              <ShieldCheck size={13} /> Veille actualités
-            </div>
-            <h2>Rappels produits récents</h2>
-            <p>Données officielles RappelConso — DGCCRF, actualisées toutes les 5 minutes.</p>
+      {/* ── CALL TO ACTION — Explorer ──────────── */}
+      {!isLoggedIn && (
+        <section className="card dash-explore-cta">
+          <div className="tile-icon mint">
+            <Compass size={22} strokeWidth={1.8} />
           </div>
-          <a
-            href="https://rappel.conso.gouv.fr"
-            target="_blank"
-            rel="noreferrer"
-            className="btn btn-outline"
-          >
-            Base officielle <ExternalLink size={14} />
-          </a>
-        </div>
-        <RecallsSection compact />
-      </section>
+          <div>
+            <h3>Explore 14 252 formations Parcoursup 2025</h3>
+            <p>Données officielles du Ministère de l'Enseignement supérieur et de la Recherche. Filtres par filière, région, statut et sélectivité.</p>
+          </div>
+          <Link href="/explorer" className="btn btn-primary">
+            Commencer <ArrowRight size={16} />
+          </Link>
+        </section>
+      )}
+
+      {isLoggedIn && favorites.length > 0 && (
+        <section className="card dash-panel" style={{ marginTop: 0 }}>
+          <div className="dash-panel-head">
+            <h2>Mes dernières formations sauvegardées</h2>
+            <Link href="/mes-choix" className="btn btn-text">
+              Voir tout <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {favorites.slice(0, 3).map(f => (
+              <Link
+                key={f.cod_aff}
+                href={`/explorer/${encodeURIComponent(f.cod_aff)}`}
+                className="dash-fav-chip"
+              >
+                <Heart size={12} fill="currentColor" />
+                Formation #{f.cod_aff}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── FOOTER ─────────────────────────────── */}
       <footer className="page-footer">
-        Vigie · Assistant indépendant d&apos;orientation. Données et échéances fictives dans cette démo.
+        Vigie · Assistant indépendant d&apos;orientation. Données officielles Parcoursup 2025.
         Aucune candidature n&apos;est déposée ici.{' '}
         <a href="https://www.parcoursup.gouv.fr/" target="_blank" rel="noopener noreferrer">
           Consulter Parcoursup
@@ -234,6 +261,8 @@ export default function DashboardPage() {
       </footer>
 
       <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
         .dash-page { max-width: 1400px; }
 
         /* Head */
@@ -272,18 +301,6 @@ export default function DashboardPage() {
           background:
             radial-gradient(ellipse at 90% 20%, rgba(36,36,245,0.4) 0%, transparent 55%),
             radial-gradient(ellipse at 10% 80%, rgba(117,66,245,0.2) 0%, transparent 50%);
-          pointer-events: none;
-        }
-        .dash-hero::after {
-          content: '';
-          position: absolute;
-          bottom: -40px;
-          right: 180px;
-          width: 160px;
-          height: 160px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.08);
           pointer-events: none;
         }
         .dash-hero-eyebrow {
@@ -372,20 +389,9 @@ export default function DashboardPage() {
           display: grid;
           grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
           gap: 16px;
-          margin-bottom: 32px;
-        }
-        .dash-panel { padding: 24px; }
-        .dash-panel-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
           margin-bottom: 20px;
         }
-        .dash-panel-head h2 {
-          font-size: 18px;
-          font-weight: 700;
-          color: var(--vigie-ink);
-        }
+        .dash-panel { padding: 24px; }
 
         /* Task rows */
         .task-list { display: flex; flex-direction: column; gap: 2px; }
@@ -399,113 +405,81 @@ export default function DashboardPage() {
         }
         .task-row:last-child { border-bottom: 0; }
         .task-row input[type="checkbox"] {
-          width: 20px;
-          height: 20px;
-          accent-color: var(--vigie-blue);
-          flex-shrink: 0;
-          cursor: pointer;
+          width: 18px; height: 18px; accent-color: var(--vigie-blue);
+          flex-shrink: 0; cursor: pointer;
         }
-        .task-body { flex: 1; min-width: 0; }
+        .task-body { flex: 1; }
         .task-body strong { display: block; font-size: 14px; color: var(--vigie-ink); }
         .task-body span { font-size: 12px; color: var(--vigie-slate); }
-
-        /* Tip */
-        .dash-tip {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          margin-top: 16px;
-          padding: 12px 16px;
-          background: var(--vigie-cloud);
-          border-radius: 12px;
-          font-size: 12px;
-          color: var(--vigie-slate);
-        }
-        .dash-tip svg { flex-shrink: 0; color: var(--vigie-electric); margin-top: 1px; }
-
-        /* Progress */
-        .dash-progress-num {
-          font-family: var(--font-heading);
-          font-size: 44px;
-          font-weight: 800;
-          color: var(--vigie-blue);
-          line-height: 1;
-          margin: 8px 0 4px;
-        }
-        .dash-progress-num span { font-size: 44px; }
-        .dash-progress-label {
-          font-size: 13px;
-          color: var(--vigie-slate);
-          margin-bottom: 16px;
-        }
 
         /* Vigi tip */
         .dash-vigi-tip {
           display: flex;
           align-items: flex-start;
-          gap: 12px;
-          margin-top: 20px;
-          padding: 14px;
+          gap: 14px;
+          padding: 16px;
           background: var(--vigie-lavender);
           border-radius: 14px;
         }
-        .dash-vigi-portrait {
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          overflow: hidden;
-          flex-shrink: 0;
-          border: 2px solid rgba(9,9,148,0.15);
-        }
         .dash-vigi-portrait img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: top center;
+          width: 44px; height: 44px; border-radius: 50%;
+          object-fit: cover; object-position: top center;
         }
-        .dash-vigi-tip strong {
-          display: block;
-          font-size: 13px;
-          color: var(--vigie-blue);
-          margin-bottom: 4px;
-        }
-        .dash-vigi-tip p { font-size: 12px; color: var(--vigie-slate); }
+        .dash-vigi-tip strong { display: block; font-size: 13px; color: var(--vigie-blue); font-weight: 700; margin-bottom: 4px; }
+        .dash-vigi-tip p { font-size: 12px; color: var(--vigie-slate); margin: 0; line-height: 1.6; }
 
-        /* Recalls section */
-        .dash-recalls-section { margin-bottom: 24px; }
-        .dash-recalls-header {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          gap: 16px;
-          margin-bottom: 20px;
-        }
-        .dash-recalls-header h2 {
-          font-size: 22px;
-          font-weight: 800;
-          color: var(--vigie-ink);
-          margin: 6px 0 4px;
-        }
-        .dash-recalls-header p { font-size: 13px; color: var(--vigie-slate); }
+        /* Next event */
+        .dash-next-event { display: flex; align-items: flex-start; gap: 14px; }
+        .dash-next-event strong { font-size: 14px; color: var(--vigie-ink); font-weight: 700; display: block; margin-bottom: 4px; }
+        .dash-next-event p { font-size: 12px; color: var(--vigie-slate); }
 
-        /* Responsive */
+        /* CTA explore */
+        .dash-explore-cta {
+          display: flex; align-items: center; gap: 20px;
+          padding: 24px 28px; margin-bottom: 20px;
+        }
+        .dash-explore-cta h3 { font-size: 16px; font-weight: 700; color: var(--vigie-ink); margin: 0 0 4px; }
+        .dash-explore-cta p { font-size: 13px; color: var(--vigie-slate); margin: 0; }
+        .dash-explore-cta > .btn { flex-shrink: 0; margin-left: auto; }
+
+        /* Vide / CTA */
+        .dash-cta {
+          display: flex; align-items: flex-start; gap: 14px;
+          padding: 20px; background: var(--vigie-lavender); border-radius: 14px;
+        }
+        .dash-cta > div { flex: 1; }
+        .dash-cta strong { display: block; font-size: 14px; color: var(--vigie-ink); font-weight: 700; margin-bottom: 4px; }
+        .dash-cta p { font-size: 12px; color: var(--vigie-slate); }
+        .dash-cta > .btn { flex-shrink: 0; }
+        .dash-empty {
+          display: flex; flex-direction: column; align-items: center; gap: 10px;
+          padding: 24px; text-align: center;
+        }
+        .dash-empty strong { font-size: 15px; color: var(--vigie-ink); }
+
+        /* Fav chips */
+        .dash-fav-chip {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 7px 12px; border-radius: 10px;
+          background: var(--vigie-lavender); color: var(--vigie-blue);
+          font-size: 12px; font-weight: 600; text-decoration: none;
+          transition: background var(--motion-fast);
+        }
+        .dash-fav-chip:hover { background: #e0deff; }
+
         @media (max-width: 1100px) {
-          .dash-hero { grid-template-columns: 1fr 160px; }
-          .dash-hero h2 { font-size: 26px; }
-          .dash-two-col { grid-template-columns: 1fr 1fr; }
+          .dash-hero { grid-template-columns: 1fr; }
+          .dash-hero-portrait { display: none; }
         }
         @media (max-width: 780px) {
-          .dash-head { flex-direction: column; }
-          .dash-head h1 { font-size: 28px; }
-          .dash-hero { grid-template-columns: 1fr 90px; padding: 20px; }
-          .dash-hero h2 { font-size: 22px; }
-          .dash-hero-portrait img { width: 90px; height: 90px; }
-          .dash-hero-spark { right: 100px; }
-          .dash-stats { grid-template-columns: 1fr 1fr 1fr; }
-          .dash-stat { padding: 14px; flex-direction: column; align-items: flex-start; gap: 8px; }
-          .dash-stat-num { font-size: 24px; }
+          .dash-head h1 { font-size: 26px; }
+          .dash-stats { grid-template-columns: 1fr 1fr; }
+          .dash-stats > :last-child { grid-column: 1 / -1; }
           .dash-two-col { grid-template-columns: 1fr; }
-          .dash-recalls-header { flex-direction: column; align-items: flex-start; }
+          .dash-hero { padding: 24px 20px; }
+          .dash-hero h2 { font-size: 24px; }
+          .dash-explore-cta { flex-direction: column; }
+          .dash-explore-cta > .btn { margin-left: 0; width: 100%; justify-content: center; }
         }
       `}</style>
     </div>

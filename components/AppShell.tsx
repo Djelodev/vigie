@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   Home,
   Compass,
@@ -10,8 +10,10 @@ import {
   Bell,
   User,
   Sparkles,
+  LogIn,
 } from 'lucide-react'
 import { ToastProvider } from '@/components/Toast'
+import { useNotifications, useCurrentUser } from '@/lib/hooks'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Accueil',    Icon: Home      },
@@ -31,9 +33,29 @@ const PAGE_LABELS: Record<string, string> = {
   '/profil':    'Mon profil',
 }
 
+function NotifBadge() {
+  const { unread } = useNotifications()
+  if (unread === 0) return null
+  return (
+    <span className="notif-badge" aria-label={`${unread} notification${unread > 1 ? 's' : ''} non lue${unread > 1 ? 's' : ''}`}>
+      {unread > 9 ? '9+' : unread}
+    </span>
+  )
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router   = useRouter()
   const pageLabel = PAGE_LABELS[pathname] ?? 'Accueil'
+  const { user, isLoggedIn } = useCurrentUser()
+
+  const avatarChar = user?.avatarChar || (isLoggedIn ? user?.name[0]?.toUpperCase() : null)
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/')
+    router.refresh()
+  }
 
   return (
     <ToastProvider>
@@ -56,6 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <Icon size={20} strokeWidth={1.8} />
                 <span>{label}</span>
+                {href === '/alertes' && <NotifBadge />}
               </Link>
             ))}
           </nav>
@@ -68,10 +91,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <p>Tu n'as pas besoin de tout décider aujourd'hui. Vigi est là pour t'aider à y voir plus clair.</p>
         </div>
 
-        <div className="sidebar-footer">
-          Vigie V1 · Assistant indépendant<br />
-          Le bon repère, au bon moment.
-        </div>
+        {isLoggedIn ? (
+          <div className="sidebar-user-footer">
+            <div className="sidebar-user-name">
+              <span className="sidebar-avatar">{avatarChar}</span>
+              <span>{user?.name}</span>
+            </div>
+            <button className="btn btn-text sidebar-logout" onClick={handleLogout}>
+              Déconnexion
+            </button>
+          </div>
+        ) : (
+          <div className="sidebar-footer">
+            <Link href="/auth/login" className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }}>
+              <LogIn size={15} /> Se connecter
+            </Link>
+          </div>
+        )}
       </aside>
 
       {/* ── MAIN ────────────────────────────────── */}
@@ -85,13 +121,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Mon espace <span>/</span> <strong>{pageLabel}</strong>
           </div>
           <div className="topbar-actions">
-            <span className="demo-badge">Mode démo</span>
-            <Link href="/alertes" className="icon-btn" aria-label="Mes alertes">
+            {!isLoggedIn && (
+              <Link href="/auth/login" className="btn btn-outline" style={{ fontSize: 13, padding: '6px 14px' }}>
+                Se connecter
+              </Link>
+            )}
+            <Link href="/alertes" className="icon-btn" aria-label="Mes alertes" style={{ position: 'relative' }}>
               <Bell size={18} strokeWidth={1.8} />
+              <NotifBadge />
             </Link>
-            <Link href="/profil" className="avatar-btn" aria-label="Mon profil">
-              É
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/profil" className="avatar-btn" aria-label="Mon profil">
+                {avatarChar || 'É'}
+              </Link>
+            ) : (
+              <Link href="/auth/login" className="avatar-btn" aria-label="Se connecter">
+                <User size={16} />
+              </Link>
+            )}
           </div>
         </header>
 
@@ -111,7 +158,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className={`bottom-nav-item${pathname === href ? ' active' : ''}`}
               aria-current={pathname === href ? 'page' : undefined}
             >
-              <Icon size={22} strokeWidth={1.8} />
+              <span style={{ position: 'relative', display: 'inline-flex' }}>
+                <Icon size={22} strokeWidth={1.8} />
+                {href === '/alertes' && <NotifBadge />}
+              </span>
               <span>{label}</span>
             </Link>
           ))}

@@ -8,6 +8,7 @@
   /* Brand palette */
   --vigie-blue:     #090994;
   --vigie-electric: #2424F5;
+  --vigie-bg:       #F6F7FB;
   --vigie-coral:    #FF4655;
   --vigie-orange:   #FFAA00;
   --vigie-mint:     #25DBB0;
@@ -263,6 +264,94 @@ select:focus-visible {
   line-height: 1.6;
   padding: 0 8px;
 }
+
+/* Sidebar — utilisateur connecté */
+.sidebar-user-footer {
+  padding: 12px 8px 4px;
+  border-top: 1px solid #e4e5ef;
+  margin-top: 8px;
+}
+.sidebar-user-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vigie-ink);
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar-avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--vigie-lavender);
+  border: 1.5px solid var(--vigie-electric);
+  color: var(--vigie-blue);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.sidebar-logout {
+  font-size: 12px;
+  color: var(--vigie-slate);
+  padding: 4px 0;
+}
+
+/* Badge notification */
+.notif-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--vigie-coral);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}
+.nav-link .notif-badge {
+  position: static;
+  margin-left: auto;
+}
+
+/* Dashboard panels */
+.dash-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.dash-panel-head h2 {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--vigie-ink);
+  margin: 0;
+}
+
+/* Tip / info notice */
+.dash-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--vigie-lavender);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--vigie-blue);
+  line-height: 1.6;
+}
+.dash-tip a { color: var(--vigie-blue); font-weight: 600; text-decoration: underline; }
 
 /* ============================================================
    TOPBAR

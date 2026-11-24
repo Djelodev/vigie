@@ -25,3 +25,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Base de données locale Vigie (NE JAMAIS committer)
+.data/
+*.db
+*.sqlite
