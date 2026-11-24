@@ -112,4 +112,4 @@ public/     # Assets graphiques validés
 
 ---
 
-*Vigie V2 · Assistant indépendant d'orientation · Bobathon ESGI 2025*
+*Vigie V2 · Assistant indépendant d'orientation · Bobathon ESGI 2026*
