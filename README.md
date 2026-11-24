@@ -1,12 +1,12 @@
 # Vigie — Le bon repère, au bon moment.
 
 > Assistant indépendant d'orientation dans l'enseignement supérieur français.
-> Projet Bobathon ESGI · IBM · Arrow — 2025
+> Projet Bobathon ESGI · IBM · Arrow — 2026
 
 ## Présentation
 
 Vigie est une application web d'accompagnement à l'orientation scolaire et étudiante.
-Elle exploite les **données officielles Parcoursup** (14 252 formations, session 2025)
+Elle exploite les **données officielles Parcoursup** (14 252 formations, session 2026)
 pour permettre aux lycéens et étudiants de rechercher, comparer et suivre leurs formations.
 
 **Vigie n'est pas une plateforme officielle Parcoursup.** Elle n'effectue aucun dépôt de candidature.
@@ -15,7 +15,7 @@ pour permettre aux lycéens et étudiants de rechercher, comparer et suivre leur
 
 | Fonctionnalité | Statut |
 |---|---|
-| Recherche de formations Parcoursup 2025 | ✅ Implémenté et testé |
+| Recherche de formations Parcoursup 2026 | ✅ Implémenté et testé |
 | Filtres filière, région, statut, sélectivité | ✅ Implémenté et testé |
 | Fiche détaillée avec statistiques officielles | ✅ Implémenté et testé |
 | Graphiques (répartition bac, comparaison) | ✅ Implémenté et testé |
@@ -26,7 +26,7 @@ pour permettre aux lycéens et étudiants de rechercher, comparer et suivre leur
 | Tâches de préparation (checklist) | ✅ Implémenté et testé |
 | Rappels personnels | ✅ Implémenté et testé |
 | Notifications avec moteur serveur | ✅ Implémenté et testé |
-| Calendrier Parcoursup 2025 officiel | ✅ Implémenté |
+| Calendrier Parcoursup 2026 officiel | ✅ Implémenté |
 | Tableau de bord personnalisé | ✅ Implémenté |
 | Profil utilisateur modifiable | ✅ Implémenté |
 | Newsletter (abonnement BDD) | ✅ Implémenté (sans SMTP) |
@@ -40,7 +40,7 @@ pour permettre aux lycéens et étudiants de rechercher, comparer et suivre leur
 
 - **Source** : Ministère de l'Enseignement supérieur et de la Recherche
 - **Dataset** : `fr-esr-parcoursup`
-- **Millésime** : Session 2025
+- **Millésime** : Session 2026
 - **Enregistrements** : 14 252 formations
 - **Licence** : Licence Ouverte Etalab 2.0
 - **API** : `https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-parcoursup/records`
