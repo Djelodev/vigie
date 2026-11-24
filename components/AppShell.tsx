@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { ToastProvider } from '@/components/Toast'
 import { useNotifications, useCurrentUser } from '@/lib/hooks'
+import { VigiaWidget } from '@/components/VigiaWidget'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Accueil',    Icon: Home      },
@@ -167,6 +168,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </div>
       </nav>
+
+      {/* ── VIGI AI WIDGET FLOTTANT ──────────────── */}
+      {isLoggedIn && <VigiaWidget />}
     </div>
     </ToastProvider>
   )

@@ -1,0 +1,481 @@
+openapi: 3.0.3
+info:
+  title: Vigie AI Tools API
+  description: API des outils métier de Vigie accessibles par l'agent watsonx Orchestrate.
+  version: "1.0.0"
+
+servers:
+  - url: "https://vigie-ai-tools.loca.lt"
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Formation:
+      type: object
+      properties:
+        id:
+          type: string
+        nom:
+          type: string
+        etablissement:
+          type: string
+        filiere:
+          type: string
+        ville:
+          type: string
+        region:
+          type: string
+        statut:
+          type: string
+        selectivite:
+          type: string
+        capacite:
+          type: integer
+        tauxAcces:
+          type: number
+        lienParcoursup:
+          type: string
+        session:
+          type: string
+        sourceLabel:
+          type: string
+
+paths:
+
+  /api/ai/tools/search_formations:
+    get:
+      operationId: search_formations
+      summary: Recherche des formations Parcoursup 2025
+      description: >
+        Recherche des formations dans la base officielle Parcoursup 2025.
+        Retourne une liste paginée avec sources officielles.
+        Paramètres : q (mots-clés), filiere (BUT/BTS/Licence...), region, ville, departement, statut (public/prive), selectivite (selective/non_selective), limit (1-20).
+        Au moins un critère est requis.
+      parameters:
+        - name: q
+          in: query
+          description: Mots-clés de recherche
+          schema:
+            type: string
+        - name: filiere
+          in: query
+          description: Filière (BUT, BTS, Licence, CPGE, etc.)
+          schema:
+            type: string
+        - name: region
+          in: query
+          description: Région (ex. Occitanie, Île-de-France)
+          schema:
+            type: string
+        - name: ville
+          in: query
+          description: Ville
+          schema:
+            type: string
+        - name: departement
+          in: query
+          description: Code département (ex. 31)
+          schema:
+            type: string
+        - name: statut
+          in: query
+          schema:
+            type: string
+            enum: [public, prive]
+        - name: selectivite
+          in: query
+          schema:
+            type: string
+            enum: [selective, non_selective]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+      responses:
+        '200':
+          description: Liste de formations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  fromCache:
+                    type: boolean
+                  formations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Formation'
+                  source:
+                    type: string
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/get_formation_details:
+    get:
+      operationId: get_formation_details
+      summary: Fiche complète d'une formation Parcoursup
+      description: >
+        Récupère toutes les informations d'une formation depuis son identifiant officiel Parcoursup (cod_aff_form).
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Identifiant officiel de la formation (cod_aff_form Parcoursup)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fiche formation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  found:
+                    type: boolean
+                  formation:
+                    $ref: '#/components/schemas/Formation'
+                  source:
+                    type: string
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/get_formation_statistics:
+    get:
+      operationId: get_formation_statistics
+      summary: Statistiques officielles d'une formation
+      description: >
+        Retourne les statistiques détaillées d'une formation Parcoursup 2025 avec définitions et sources.
+        IMPORTANT : statistiques historiques uniquement, pas une prédiction individuelle d'admission.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Identifiant officiel de la formation
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Statistiques avec définitions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  found:
+                    type: boolean
+                  id:
+                    type: string
+                  nom:
+                    type: string
+                  session:
+                    type: string
+                  statistiques:
+                    type: object
+                  avertissement:
+                    type: string
+                  source:
+                    type: string
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/compare_formations:
+    post:
+      operationId: compare_formations
+      summary: Compare jusqu'à 4 formations
+      description: >
+        Compare plusieurs formations Parcoursup côte à côte sur critères objectifs.
+        Données Parcoursup 2025.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 2
+                  maxItems: 4
+                  description: Liste des identifiants de formations à comparer (2 à 4)
+      responses:
+        '200':
+          description: Tableau de comparaison
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  formations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Formation'
+                  source:
+                    type: string
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/get_alternative_formations:
+    get:
+      operationId: get_alternative_formations
+      summary: Formations alternatives selon les critères
+      description: >
+        Trouve des formations alternatives selon les critères de l'étudiant.
+        Au moins un critère requis parmi filiere, region, q.
+      parameters:
+        - name: filiere
+          in: query
+          schema:
+            type: string
+        - name: region
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 8
+            maximum: 20
+      responses:
+        '200':
+          description: Liste d'alternatives
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/get_official_deadlines:
+    get:
+      operationId: get_official_deadlines
+      summary: Échéances officielles Parcoursup 2025
+      description: >
+        Retourne le calendrier officiel Parcoursup 2025 avec dates et indication si chaque échéance est passée ou à venir.
+      responses:
+        '200':
+          description: Calendrier officiel
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session:
+                    type: string
+                  echeances:
+                    type: array
+                    items:
+                      type: object
+                  source:
+                    type: string
+
+  /api/ai/tools/get_user_preferences:
+    get:
+      operationId: get_user_preferences
+      summary: Préférences de l'utilisateur authentifié
+      description: >
+        Retourne les préférences de l'utilisateur connecté (niveau, bac, domaines, régions, alternance).
+        Nécessite authentification.
+      responses:
+        '200':
+          description: Préférences utilisateur
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/get_user_favorites:
+    get:
+      operationId: get_user_favorites
+      summary: Favoris de l'utilisateur connecté
+      description: >
+        Liste les formations sauvegardées par l'utilisateur authentifié avec leur statut de suivi.
+      responses:
+        '200':
+          description: Liste des favoris
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/get_user_progress:
+    get:
+      operationId: get_user_progress
+      summary: Tâches et progression de l'étudiant
+      description: >
+        Retourne les tâches de préparation de l'étudiant avec leur état d'avancement et le pourcentage de progression.
+      responses:
+        '200':
+          description: Tâches et progression
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/get_user_reminders:
+    get:
+      operationId: get_user_reminders
+      summary: Rappels personnels en attente
+      description: >
+        Retourne les rappels non complétés de l'utilisateur authentifié triés par date.
+      responses:
+        '200':
+          description: Liste des rappels
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/propose_add_favorite:
+    post:
+      operationId: propose_add_favorite
+      summary: Propose d'ajouter une formation aux favoris
+      description: >
+        Prépare une proposition d'ajout d'une formation aux favoris.
+        NE PAS exécuter sans confirmation explicite de l'utilisateur.
+        La proposition expire après 5 minutes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - codAff
+              properties:
+                codAff:
+                  type: string
+                  description: Identifiant officiel de la formation
+                formationNom:
+                  type: string
+                  description: Nom de la formation pour l'affichage
+      responses:
+        '200':
+          description: Proposition créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proposed:
+                    type: boolean
+                  actionId:
+                    type: string
+                  message:
+                    type: string
+                  alreadyExists:
+                    type: boolean
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/propose_create_reminder:
+    post:
+      operationId: propose_create_reminder
+      summary: Propose de créer un rappel
+      description: >
+        Prépare une proposition de rappel.
+        NE PAS exécuter sans confirmation explicite de l'utilisateur.
+        Résoudre la date relative (ex. "demain à 18h") avant d'appeler cet outil.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - label
+                - dueDate
+              properties:
+                label:
+                  type: string
+                  description: Titre du rappel
+                note:
+                  type: string
+                  description: Description optionnelle
+                dueDate:
+                  type: string
+                  format: date-time
+                  description: Date et heure ISO 8601, fuseau Europe/Paris
+      responses:
+        '200':
+          description: Proposition créée
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/propose_create_task:
+    post:
+      operationId: propose_create_task
+      summary: Propose de créer une tâche
+      description: >
+        Prépare une proposition de tâche dans l'espace personnel.
+        NE PAS exécuter sans confirmation explicite de l'utilisateur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - label
+              properties:
+                label:
+                  type: string
+                note:
+                  type: string
+                dueDate:
+                  type: string
+                  format: date
+                category:
+                  type: string
+                  enum: [general, orientation, parcoursup, admin, autre]
+                  default: general
+      responses:
+        '200':
+          description: Proposition créée
+        '401':
+          description: Non authentifié
+
+  /api/ai/tools/propose_update_choice_status:
+    post:
+      operationId: propose_update_choice_status
+      summary: Propose de mettre à jour le statut d'une formation suivie
+      description: >
+        Prépare une proposition de modification de statut.
+        NE PAS exécuter sans confirmation explicite de l'utilisateur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - codAff
+                - status
+              properties:
+                codAff:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                    - a_decouvrir
+                    - en_reflexion
+                    - favori
+                    - candidature_soumise
+                    - accepte
+                    - refuse
+      responses:
+        '200':
+          description: Proposition créée
+        '401':
+          description: Non authentifié

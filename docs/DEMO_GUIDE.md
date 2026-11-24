@@ -1,5 +1,5 @@
-# Guide de démonstration — Vigie V2
-> Bobathon ESGI · IBM · Arrow — Durée : 5 minutes
+# Guide de démonstration — Vigi AI
+> Bobathon ESGI · IBM · Arrow — Segment IA : ~90 secondes
 
 ## Préparation avant la démo
 
@@ -7,155 +7,125 @@
 
 ```bash
 cd project-hackaton
-pnpm run dev
-# Accès sur http://localhost:3000
+npm run dev
+# → http://localhost:3000
 ```
 
-### 2. Créer le compte de démonstration
+### 2. Configurer Vigi AI
+
+```bash
+# Dans .env
+WXO_ENABLED=true
+WXO_INSTANCE_URL=https://VOTRE-INSTANCE.app.aws.watsonxorchestrate.ibm.com
+WXO_API_KEY=VOTRE_CLE
+WXO_AGENT_ID=vigi_ai
+```
+
+### 3. Créer un compte de démonstration isolé
 
 1. Ouvrir `http://localhost:3000`
-2. Cliquer sur **Découvrir mon espace**
-3. Cliquer sur **Créer un compte** dans la navigation
-4. Renseigner :
-   - Prénom : `Alex`
-   - E-mail : `demo@vigie.fr`
-   - Mot de passe : `demo1234`
-5. Se connecter automatiquement
+2. Créer un compte : `demo@vigie.fr` / `demo1234`
+3. Vider les favoris et tâches si nécessaire
 
-### 3. Vérifier les données
+### 4. Vérifier que l'agent répond
 
 ```bash
-curl http://localhost:3000/api/formations?limit=1
-# Doit retourner fromCache: false et 14252 formations
+curl -s -b cookies.txt \
+  -X POST http://localhost:3000/api/ai/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Bonjour, tu fonctionne ?"}'
 ```
 
 ---
 
-## Scénario de démonstration (5 minutes)
+## Scénario de démonstration Vigi AI (90 secondes)
 
-### ⏱ Minute 1 — La page d'accueil (30 s)
+> Contexte : un étudiant cherche une formation en informatique à Toulouse en alternance.
 
-1. Afficher `http://localhost:3000`
-2. Mettre en avant le **slogan** et la **mascotte Vigi**
-3. Cliquer sur **Commencer à explorer**
+### ⏱ Secondes 0–15 — Ouverture de Vigi AI
 
-**Message clé** : *"Vigie est un assistant indépendant d'orientation basé sur les données officielles Parcoursup."*
+1. Afficher http://localhost:3000 avec l'application Vigie
+2. Cliquer sur **Vigi AI** dans la navigation latérale
+3. Montrer l'interface conversationnelle propre avec suggestions
 
-### ⏱ Minute 1–2 — Recherche réelle (1 min 30 s)
+**Message clé** : *"Voici Vigi AI — propulsé par IBM watsonx Orchestrate."*
 
-1. Aller sur **Explorer**
-2. Taper `informatique` dans la barre de recherche
-3. Montrer le compteur de résultats → **données officielles 2025**
-4. Appliquer le filtre **BUT**
-5. Filtrer par région **Île-de-France**
-6. Montrer la **pagination** et les **badges officiels**
+### ⏱ Secondes 15–35 — Recherche réelle
 
-**Message clé** : *"14 252 formations réelles du Ministère de l'Enseignement supérieur, session 2025."*
+Taper dans le chat :
+> *"Je veux travailler dans l'informatique, étudier à Toulouse ou dans les environs, et je préfère l'alternance."*
 
-### ⏱ Minute 2–3 — Fiche de formation (1 min)
+Vigi doit :
+1. Comprendre la demande
+2. Appeler `search_formations` avec `q="informatique alternance" region="Occitanie" ville="Toulouse"`
+3. Afficher des formations réelles avec taux d'accès et liens officiels
 
-1. Cliquer sur **Voir la fiche** d'une formation
-2. Montrer les statistiques officielles :
-   - Capacité d'accueil
-   - Nombre de candidatures
-   - Nombre d'admis
-   - **Taux d'accès officiel**
-3. Montrer le **graphique répartition par bac**
-4. Cliquer sur **Ajouter** (favori)
-5. Montrer le lien **Fiche Parcoursup officielle**
+**Message clé** : *"Vigi interroge en temps réel les 14 252 formations Parcoursup 2025."*
 
-**Message clé** : *"Chaque donnée affiche sa source et son année. Aucune valeur inventée."*
+### ⏱ Secondes 35–55 — Comparaison
 
-### ⏱ Minute 3 — Comparateur (45 s)
+Taper :
+> *"Compare les 3 premières formations."*
 
-1. Revenir à **Explorer**
-2. Cliquer sur **Comparer** sur 2 autres formations
-3. Aller sur **Comparer**
-4. Montrer les **critères côte à côte**
-5. Montrer le **graphique taux d'accès comparé**
-6. Montrer le graphique **Candidatures vs Admis**
+Vigi doit appeler `compare_formations` et présenter une comparaison structurée.
 
-**Message clé** : *"Comparaison sur données réelles, pas de scores fictifs, transparence totale."*
+**Message clé** : *"Chaque chiffre est vérifiable — le jury peut cliquer sur le lien Parcoursup."*
 
-### ⏱ Minute 3–4 — Suivi personnel (45 s)
+### ⏱ Secondes 55–75 — Action sécurisée
 
-1. Aller sur **Mes choix**
-2. Montrer la formation ajoutée — **persistante** après navigation
-3. Modifier le **statut** (ex. : "À analyser" → "Formation favorite")
-4. Cocher une **tâche de préparation**
-5. Montrer la **barre de progression**
-6. Cliquer sur **Exporter CSV**
+Taper :
+> *"Ajoute la première formation à mes favoris."*
 
-**Message clé** : *"Le suivi personnel est persistent grâce à une base de données SQLite locale."*
+Vigi doit :
+1. Appeler `propose_add_favorite`
+2. Afficher la **carte de confirmation** (pas d'exécution automatique !)
+3. L'utilisateur clique **Confirmer**
+4. L'action est exécutée via `/api/ai/actions`
 
-### ⏱ Minute 4–5 — Alertes et calendrier (1 min)
+**Message clé** : *"L'IA propose, l'étudiant décide. Aucune écriture sans confirmation explicite."*
 
-1. Aller sur **Alertes**
-2. Montrer le **calendrier Parcoursup 2025** avec dates officielles
-3. Créer un **rappel personnel** : "Vérifier ma lettre de motivation", date dans 30 jours
-4. Cliquer sur **Traiter les rappels maintenant** → notification générée
-5. Voir la **notification** apparaître dans la liste
-6. Montrer le **badge de notification** dans la barre latérale
+### ⏱ Secondes 75–90 — Vérification
 
-**Message clé** : *"Les notifications sont générées automatiquement côté serveur à partir d'événements réels."*
+Taper :
+> *"Montre-moi mes formations sauvegardées."*
 
-### ⏱ Dernière minute — Profil et newsletter (30 s)
+Vigi appelle `get_user_favorites` et confirme que la formation est bien enregistrée.
 
-1. Aller sur **Mon profil**
-2. Montrer le profil de Alex avec ses préférences
-3. Montrer le formulaire d'abonnement newsletter
-4. Souligner que l'abonnement est **enregistré en base de données**
+**Ou** : naviguer dans **Mes choix** pour montrer la persistance en BDD.
 
 ---
 
-## Points forts à mettre en avant
+## Points à mettre en avant
 
-| Point | Preuve |
+| Point | Preuve visible |
 |---|---|
-| Données réelles | Parcoursup 2025 · 14 252 formations |
-| Persistance | SQLite local · rechargement conserve les données |
-| Authentification | Mot de passe bcrypt, session sécurisée |
-| Calendrier officiel | Dates vérifiées 2025 |
-| Transparence | Source affichée sur chaque donnée |
-| Pas de simulation | "Données fictives" supprimé, badges "Données officielles 2025" |
+| Données réelles | Noms de formations, taux d'accès, liens Parcoursup |
+| IBM watsonx | Badge "IBM watsonx Orchestrate" dans l'interface |
+| Sécurité | Carte de confirmation avant tout ajout |
+| Pas d'hallucination | Si formation inexistante : "Aucun résultat trouvé" |
+| Mode dégradé | App Vigie fonctionnelle si IBM indisponible |
 
 ---
 
-## En cas de problème réseau
+## Scénario alternatif (si IBM indisponible)
 
-Si l'API Parcoursup est indisponible :
-- L'application affiche un indicateur **"cache"**
-- Les données du cache SQLite local sont utilisées
-- Un message clair est affiché : *"Données du cache local"*
+Si watsonx Orchestrate ne répond pas :
+
+1. L'interface affiche : *"Vigi AI est temporairement indisponible. L'application Vigie reste disponible."*
+2. Montrer que la recherche, les favoris, le comparateur fonctionnent normalement
+3. **Message clé** : *"Le feature flag garantit que Vigie ne dépend pas de la disponibilité de l'IA."*
+
+---
+
+## Commandes de vérification rapide avant démo
 
 ```bash
-# Vérifier l'état du cache
-curl http://localhost:3000/api/formations?limit=1 | jq '.fromCache'
+# 1. API Parcoursup disponible ?
+curl http://localhost:3000/api/formations?limit=1 | python3 -c "import sys,json; d=json.load(sys.stdin); print('OK' if d.get('total')==14252 else 'PROBLEME')"
+
+# 2. Vigi AI configurée ?
+# WXO_ENABLED=true dans .env et agent déployé dans WXO
+
+# 3. Base de données propre ?
+# Supprimer .data/vigie.db et redémarrer pour repartir de zéro
 ```
-
----
-
-## Réinitialisation des données de démo
-
-```bash
-# Supprimer la base de données (NE PAS faire en démo !)
-rm .data/vigie.db
-
-# Ou conserver les autres utilisateurs et supprimer uniquement le compte démo
-# → Se connecter et aller dans Profil → Supprimer le compte
-```
-
----
-
-## Configuration requise
-
-| Élément | Valeur |
-|---|---|
-| Node.js | >= 18 |
-| pnpm | 12.x |
-| Réseau | Accès internet pour l'API Parcoursup |
-| Port | 3000 (ou 3001 si occupé) |
-
----
-
-*Vigie V2 · Bobathon ESGI · IBM · Arrow · 2025*

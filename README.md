@@ -32,6 +32,7 @@ pour permettre aux lycéens et étudiants de rechercher, comparer et suivre leur
 | Newsletter (abonnement BDD) | ✅ Implémenté (sans SMTP) |
 | Export CSV des favoris | ✅ Implémenté |
 | Responsive mobile | ✅ Design préservé |
+| **Vigi AI — Copilote IBM watsonx Orchestrate** | ✅ Intégré (config IBM requise) |
 | Données RappelConso (hors-sujet) | ⚠️ Conservé, non supprimé |
 | Carte géographique | ❌ Non implémenté (P2) |
 | Tests automatisés | ❌ Non implémentés (P1) |
@@ -85,6 +86,18 @@ docs/       # Documentation
 public/     # Assets graphiques validés
 ```
 
+## Vigi AI — IBM watsonx Orchestrate
+
+L'assistant IA est intégré dans l'application via l'architecture suivante :
+
+```
+Browser → /api/ai/chat → lib/watsonx.ts → IBM watsonx Orchestrate
+                       → lib/ai-tools.ts (exécution locale des outils)
+                       → lib/ai-actions.ts (confirmation des actions)
+```
+
+**Configuration** : voir `docs/WATSONX_SETUP.md`
+
 ## Documentation
 
 | Fichier | Description |
@@ -95,6 +108,11 @@ public/     # Assets graphiques validés
 | `docs/TEST_REPORT.md` | Rapport de tests |
 | `docs/DEMO_GUIDE.md` | Guide de démonstration jury |
 | `docs/AI_INTEGRATION_PLAN.md` | Plan intégration watsonx Orchestrate |
+| `docs/AI_ARCHITECTURE.md` | Architecture Vigi AI |
+| `docs/WATSONX_SETUP.md` | Configuration IBM watsonx |
+| `docs/AGENT_TOOLS.md` | Documentation des 14 outils |
+| `docs/AI_SECURITY.md` | Sécurité de l'intégration IA |
+| `docs/AI_TEST_REPORT.md` | Rapport de tests IA |
 
 ## Stack
 

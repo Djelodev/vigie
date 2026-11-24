@@ -139,6 +139,39 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  -- Actions en attente de confirmation (Vigi AI)
+  CREATE TABLE IF NOT EXISTS ai_pending_actions (
+    id             TEXT    PRIMARY KEY,
+    user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type           TEXT    NOT NULL,
+    payload        TEXT    NOT NULL DEFAULT '{}',
+    correlation_id TEXT    NOT NULL DEFAULT '',
+    expires_at     TEXT    NOT NULL,
+    status         TEXT    NOT NULL DEFAULT 'pending',
+    executed_at    TEXT,
+    error          TEXT,
+    created_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Conversations Vigi AI
+  CREATE TABLE IF NOT EXISTS ai_conversations (
+    id             TEXT    PRIMARY KEY,
+    user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    wxo_conv_id    TEXT,
+    title          TEXT    NOT NULL DEFAULT 'Nouvelle conversation',
+    created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Messages d'une conversation Vigi AI
+  CREATE TABLE IF NOT EXISTS ai_messages (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT    NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+    role            TEXT    NOT NULL DEFAULT 'user',
+    content         TEXT    NOT NULL DEFAULT '',
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
 `)
 
 // Tâches par défaut pour les nouveaux utilisateurs
